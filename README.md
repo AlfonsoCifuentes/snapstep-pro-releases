@@ -2,6 +2,8 @@
 
 **Capturas limpias, vídeos con zoom automático y guías paso a paso en Windows. Privacidad local total.**
 
+🌐 Web: https://snapstep-pro.vercel.app
+
 ⬇ **[Descargar SnapStep Pro para Windows 10/11 (x64)](https://github.com/AlfonsoCifuentes/snapstep-pro-releases/releases/latest/download/SnapStepPro-Setup-x64.exe)**
 
 - 📷 Captura con **Auto-Blur PII**: emails, tarjetas, IBAN, claves API, JWT, IPs y DNI/NIE se difuminan con OCR 100 % local.
