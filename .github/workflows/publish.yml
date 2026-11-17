@@ -1,0 +1,49 @@
+name: Publicar versión
+
+# El código fuente es privado: el instalador ya compilado y probado se sube a la rama "upload"
+# (carpeta dist/) y este workflow lo publica como release pública con el token del propio repositorio.
+on:
+  push:
+    branches: [upload]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: upload
+
+      - name: Verificar instalador y hash
+        id: meta
+        run: |
+          set -euo pipefail
+          version="$(tr -d '[:space:]' < dist/VERSION)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "VERSION no válida: $version"; exit 1; }
+          cd dist
+          expected="$(cut -d' ' -f1 SnapStepPro-Setup-x64.exe.sha256)"
+          actual="$(sha256sum SnapStepPro-Setup-x64.exe | cut -d' ' -f1)"
+          [[ "$expected" == "$actual" ]] || { echo "El SHA-256 no coincide"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Versión $version · SHA-256 $actual · $(du -h SnapStepPro-Setup-x64.exe | cut -f1)"
+
+      - name: Crear o actualizar la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/SnapStepPro-Setup-x64.exe dist/SnapStepPro-Setup-x64.exe.sha256 --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag" dist/SnapStepPro-Setup-x64.exe dist/SnapStepPro-Setup-x64.exe.sha256 \
+              --repo "$GITHUB_REPOSITORY" --target main --latest \
+              --title "SnapStep Pro $VERSION" --notes-file dist/NOTES.md
+          fi
+
+      - name: Borrar la rama temporal
+        run: git push origin --delete upload
